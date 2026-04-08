@@ -3,6 +3,9 @@ import subprocess
 import yaml
 import argparse
 import logging
+import zipfile
+import tarfile
+import shutil
 
 def run_command(cmd, cwd=None):
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
@@ -11,7 +14,7 @@ def run_command(cmd, cwd=None):
         return False
     return True
 
-def process_config(config, default_repo, prefix="", run_build=False):
+def process_config(config, default_repo, prefix="", run_build=False, archive_name=None):
     suffix = config.get('suffix', 'custom')
     base_repo = config.get('repo', default_repo)
     tag = config.get('tag')
@@ -24,9 +27,9 @@ def process_config(config, default_repo, prefix="", run_build=False):
     logging.info(f"--- Processing: {target_dir} ---")
 
     if not run_command(f"git clone {base_repo} {target_dir}"):
-        return
+        return target_dir
 
-    if tag:
+    if tag and tag != "latest":
         logging.info(f"Checking out tag {tag}...")
         run_command(f"git checkout tags/{tag} -b branch-{suffix}", cwd=target_dir)
 
@@ -37,7 +40,6 @@ def process_config(config, default_repo, prefix="", run_build=False):
 
     if patches:
         for patch_path in patches:
-            # Resolve absolute path since we change directory to target_dir
             abs_patch_path = os.path.abspath(patch_path)
             if os.path.exists(abs_patch_path):
                 logging.info(f"Applying patch: {patch_path}...")
@@ -49,18 +51,50 @@ def process_config(config, default_repo, prefix="", run_build=False):
         build_cmd = config.get('build')
         if build_cmd:
             logging.info(f"Running build command: {build_cmd}")
-            run_command(build_cmd, cwd=target_dir)
+            if not run_command(build_cmd, cwd=target_dir):
+                logging.error(f"Build failed for {target_dir}. Skipping archive.")
+                return target_dir
         else:
             logging.warning(f"No build command defined for {target_dir}")
 
+    if archive_name:
+        logging.info(f"Archiving new files to {archive_name}...")
+        res = subprocess.run("git ls-files --others --exclude-standard", 
+                             shell=True, capture_output=True, text=True, cwd=target_dir)
+        new_files = [f for f in res.stdout.splitlines() if f]
+
+        if not new_files:
+            logging.warning(f"No new files found in {target_dir} to archive.")
+        else:
+            try:
+                if archive_name.endswith('.zip'):
+                    with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                        for f in new_files:
+                            zipf.write(os.path.join(target_dir, f), f)
+                elif archive_name.endswith(('.tar', '.tar.gz', '.tgz')):
+                    mode = 'w:gz' if archive_name.endswith(('.gz', '.tgz')) else 'w'
+                    with tarfile.open(archive_name, mode) as tar:
+                        for f in new_files:
+                            tar.add(os.path.join(target_dir, f), arcname=f)
+                else:
+                    logging.error(f"Unsupported archive format: {archive_name}")
+            except Exception as e:
+                logging.error(f"Failed to create archive {archive_name}: {e}")
+
     logging.info(f"Setup complete in ./{target_dir}")
+    return target_dir
 
 def main():
     parser = argparse.ArgumentParser(description="Build custom repos from YAML config.")
     parser.add_argument("-c", "--config", default="config.yml", help="Path to the YAML configuration file")
     parser.add_argument("-b", "--build", action="store_true", help="Execute the build command if defined")
+    parser.add_argument("-a", "--archive", help="Archive name for new files (implies -b)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
+    parser.add_argument("--clean", action="store_true", help="Remove checked out repositories on exit")
     args = parser.parse_args()
+
+    if args.archive:
+        args.build = True
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
@@ -76,8 +110,18 @@ def main():
     prefix = data.get('prefix', "")
     configs = data.get('configs', [])
 
-    for cfg in configs:
-        process_config(cfg, default_repo, prefix=prefix, run_build=args.build)
+    created_dirs = []
+    try:
+        for cfg in configs:
+            target_dir = process_config(cfg, default_repo, prefix=prefix, run_build=args.build, archive_name=args.archive)
+            if target_dir:
+                created_dirs.append(target_dir)
+    finally:
+        if args.clean:
+            for d in created_dirs:
+                if os.path.exists(d):
+                    logging.info(f"Cleaning up {d}...")
+                    shutil.rmtree(d)
 
 if __name__ == "__main__":
     main()
