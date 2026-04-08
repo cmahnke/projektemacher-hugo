@@ -1,0 +1,11 @@
+# Config to build a custom Hugo
+default-repo: https://github.com/gohugoio/hugo
+prefix: hugo
+configs:
+  - suffix: esbuild
+    repo: https://github.com/gohugoio/hugo
+    tag: v0.160.0
+    prs:
+      - 14725
+    patches:
+    build: CGO_ENABLED=1 go build -tags extended
