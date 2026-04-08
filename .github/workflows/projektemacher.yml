@@ -12,6 +12,11 @@ env:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   build-and-archive:
     runs-on: ubuntu-latest
