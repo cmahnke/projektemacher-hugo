@@ -7,7 +7,7 @@ configs:
     tag: v0.160.0
     prs:
       - 14725
+      - 14731
     patches:
     build: CGO_ENABLED=1 go build -tags extended -ldflags "-X 'github.com/gohugoio/hugo/common/hugo.vendorInfo=projektemacher-hugo-esbuild'"
     archive: hugo_esbuild_0.160.0_linux-amd64.tar.gz
- 

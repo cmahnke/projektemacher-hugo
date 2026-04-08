@@ -37,7 +37,7 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
 
     if tag and tag != "latest":
         logging.info(f"Checking out tag {tag}...")
-        run_command(f"git checkout tags/{tag} -b branch-{suffix}", cwd=target_dir)
+        run_command(f"git checkout tags/{tag}", cwd=target_dir)
 
     for pr in prs:
         logging.info(f"Applying PR #{pr}...")
@@ -66,7 +66,7 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
     archive_path = None
     if archive_name:
         logging.info(f"Archiving new files to {archive_name}...")
-        res = subprocess.run("git ls-files --others --exclude-standard", 
+        res = subprocess.run("git ls-files --others --exclude-standard",
                              shell=True, capture_output=True, text=True, cwd=target_dir)
         new_files = [f for f in res.stdout.splitlines() if f]
 
@@ -134,7 +134,7 @@ def main():
                 if os.path.exists(d):
                     logging.info(f"Cleaning up {d}...")
                     shutil.rmtree(d)
-        
+
         if args.json_output:
             print(json.dumps(created_archives))
 
