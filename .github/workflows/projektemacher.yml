@@ -24,6 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Git
+        run: |
+          git config --global user.email "hugo@projektemacher.org"
+          git config --global user.name "Projektemacher Hugo"
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
