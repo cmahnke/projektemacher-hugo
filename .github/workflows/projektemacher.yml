@@ -41,7 +41,7 @@ jobs:
       - name: Run Repo Preparer
         id: preparer
         run: |
-          JSON_OUT=$(python scripts/prepare-repo.py -c config.yaml --clean --verbose --json-output)
+          JSON_OUT=$(python scripts/prepare-repo.py -c config.yaml --verbose --json-output)
           FILES=$(echo "$JSON_OUT" | jq -r 'join(" ")')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
 
