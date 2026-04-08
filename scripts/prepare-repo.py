@@ -23,6 +23,10 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
     patches = config.get('patches', [])
     config_archive_name = config.get('archive')
 
+    if not archive_name and config_archive_name:
+        archive_name = config_archive_name
+        run_build = True
+
     if prefix != "":
         prefix = f"{prefix}-"
     target_dir = f"{prefix}{suffix}"
@@ -59,11 +63,6 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
         else:
             logging.warning(f"No build command defined for {target_dir}")
 
-    # If archive_name is not provided via CLI, check if it's in the config
-    if not archive_name and config_archive_name:
-        archive_name = config_archive_name
-        run_build = True # Implies build if archiving from config
-    
     archive_path = None
     if archive_name:
         logging.info(f"Archiving new files to {archive_name}...")
