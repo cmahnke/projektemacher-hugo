@@ -8,6 +8,6 @@ configs:
     prs:
       - 14725
     patches:
-    build: CGO_ENABLED=1 go build -tags extended -ldflags "-X 'github.com/gohugoio/hugo/common/hugo.VendorInfo=projektemacher-hugo-esbuild'"
+    build: CGO_ENABLED=1 go build -tags extended -ldflags "-X 'github.com/gohugoio/hugo/common/hugo.vendorInfo=projektemacher-hugo-esbuild'"
     archive: hugo_esbuild_0.160.0_linux-amd64.tar.gz
  
