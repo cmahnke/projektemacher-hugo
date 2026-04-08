@@ -9,3 +9,5 @@ configs:
       - 14725
     patches:
     build: CGO_ENABLED=1 go build -tags extended
+    archive: hugo_esbuild_0.160.0_linux-amd64.tar.gz
+ 

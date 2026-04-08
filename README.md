@@ -6,7 +6,8 @@ This utility automates the process of creating customized versions of Hugo (or o
 
 - Python 3.x
 - Git
-- PyYAML (`pip install -r requirements.txt`)
+- PyYAML (install via `pip install -r requirements.txt`)
+- Go (if running build commands for Hugo)
 
 ## Usage
 
@@ -25,6 +26,7 @@ python scripts/prepare-repo.py [options]
 | `-a` | `--archive` | Name of the archive file to create (e.g., `output.zip`). Implies `-b`. |
 | `-v` | `--verbose` | Enables debug-level logging for more detailed output. |
 | | `--clean` | Automatically removes the checked-out repository directories upon exit. |
+| | `--json-output` | Prints a JSON array of all created archive absolute paths to stdout. |
 
 ### Archiving Details
 When using the `-a` / `--archive` flag, the script identifies "new" files (files untracked by Git, usually build artifacts) and packages them. Supported formats include:
@@ -75,3 +77,6 @@ configs:
 
 **Build, Archive, and Cleanup:**
 `python scripts/prepare-repo.py -c config.yaml -a custom-hugo.tar.gz --clean`
+
+**Generate JSON paths for automation:**
+`python scripts/prepare-repo.py -c config.yaml --json-output`

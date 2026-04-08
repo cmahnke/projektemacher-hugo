@@ -6,6 +6,7 @@ import logging
 import zipfile
 import tarfile
 import shutil
+import json
 
 def run_command(cmd, cwd=None):
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
@@ -20,6 +21,7 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
     tag = config.get('tag')
     prs = config.get('prs', [])
     patches = config.get('patches', [])
+    config_archive_name = config.get('archive')
 
     if prefix != "":
         prefix = f"{prefix}-"
@@ -27,7 +29,7 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
     logging.info(f"--- Processing: {target_dir} ---")
 
     if not run_command(f"git clone {base_repo} {target_dir}"):
-        return target_dir
+        return target_dir, None
 
     if tag and tag != "latest":
         logging.info(f"Checking out tag {tag}...")
@@ -53,10 +55,16 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
             logging.info(f"Running build command: {build_cmd}")
             if not run_command(build_cmd, cwd=target_dir):
                 logging.error(f"Build failed for {target_dir}. Skipping archive.")
-                return target_dir
+                return target_dir, None
         else:
             logging.warning(f"No build command defined for {target_dir}")
 
+    # If archive_name is not provided via CLI, check if it's in the config
+    if not archive_name and config_archive_name:
+        archive_name = config_archive_name
+        run_build = True # Implies build if archiving from config
+    
+    archive_path = None
     if archive_name:
         logging.info(f"Archiving new files to {archive_name}...")
         res = subprocess.run("git ls-files --others --exclude-standard", 
@@ -78,11 +86,12 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
                             tar.add(os.path.join(target_dir, f), arcname=f)
                 else:
                     logging.error(f"Unsupported archive format: {archive_name}")
+                archive_path = os.path.abspath(archive_name)
             except Exception as e:
                 logging.error(f"Failed to create archive {archive_name}: {e}")
 
     logging.info(f"Setup complete in ./{target_dir}")
-    return target_dir
+    return target_dir, archive_path
 
 def main():
     parser = argparse.ArgumentParser(description="Build custom repos from YAML config.")
@@ -91,6 +100,7 @@ def main():
     parser.add_argument("-a", "--archive", help="Archive name for new files (implies -b)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     parser.add_argument("--clean", action="store_true", help="Remove checked out repositories on exit")
+    parser.add_argument("--json-output", action="store_true", help="Print created archive paths as JSON")
     args = parser.parse_args()
 
     if args.archive:
@@ -111,17 +121,23 @@ def main():
     configs = data.get('configs', [])
 
     created_dirs = []
+    created_archives = []
     try:
         for cfg in configs:
-            target_dir = process_config(cfg, default_repo, prefix=prefix, run_build=args.build, archive_name=args.archive)
+            target_dir, archive_path = process_config(cfg, default_repo, prefix=prefix, run_build=args.build, archive_name=args.archive)
             if target_dir:
                 created_dirs.append(target_dir)
+            if archive_path:
+                created_archives.append(archive_path)
     finally:
         if args.clean:
             for d in created_dirs:
                 if os.path.exists(d):
                     logging.info(f"Cleaning up {d}...")
                     shutil.rmtree(d)
+        
+        if args.json_output:
+            print(json.dumps(created_archives))
 
 if __name__ == "__main__":
     main()
