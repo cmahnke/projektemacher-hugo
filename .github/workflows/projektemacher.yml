@@ -45,6 +45,10 @@ jobs:
           FILES=$(echo "$JSON_OUT" | jq -r 'join(" ")')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
 
+      - name: Output version
+        run: |
+          ./hugo-esbuild/hugo version
+
       - name: Create GitHub Release
         if: steps.preparer.outputs.files != ''
         env:
