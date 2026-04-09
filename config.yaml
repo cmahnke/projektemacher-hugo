@@ -4,7 +4,7 @@ prefix: hugo
 configs:
   - suffix: esbuild
     repo: https://github.com/gohugoio/hugo
-    tag: v0.160.0
+    tag: v0.160.1
     prs:
       - 14725
       - 14731
