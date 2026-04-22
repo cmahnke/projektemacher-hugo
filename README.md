@@ -1,4 +1,4 @@
-# Hugo Custom Repo Preparer
+# Custom Repo Preparer
 
 This utility automates the process of creating customized versions of Hugo (or other repositories). It handles cloning, checking out specific tags, applying GitHub Pull Requests, applying local patches, and optionally building and archiving the resulting artifacts.
 
@@ -19,14 +19,15 @@ python scripts/prepare-repo.py [options]
 
 ### Command Line Arguments
 
-| Argument | Long Flag | Description |
-| :--- | :--- | :--- |
-| `-c` | `--config` | Path to the YAML configuration file (default: `config.yml`). |
-| `-b` | `--build` | Executes the `build` command defined in the config for each entry. |
-| `-a` | `--archive` | Name of the archive file to create (e.g., `output.zip`). Implies `-b`. |
-| `-v` | `--verbose` | Enables debug-level logging for more detailed output. |
-| | `--clean` | Automatically removes the checked-out repository directories upon exit. |
-| | `--json-output` | Prints a JSON array of all created archive absolute paths to stdout. |
+| Argument | Long Flag       | Description                                                             |
+| :------- | :-------------- | :---------------------------------------------------------------------- |
+| `-c`     | `--config`      | Path to the YAML configuration file (default: `config.yml`).            |
+| `-b`     | `--build`       | Executes the `build` command defined in the config for each entry.      |
+| `-a`     | `--archive`     | Name of the archive file to create (e.g., `output.zip`). Implies `-b`.  |
+| `-v`     | `--verbose`     | Enables debug-level logging for more detailed output.                   |
+| `-f`     | `--force`       | Enables debug-level logging for more detailed output.                   |
+|          | `--clean`       | Automatically removes the checked-out repository directories upon exit. |
+|          | `--json-output` | Prints a JSON array of all created archive absolute paths to stdout.    |
 
 ### Archiving Details
 When using the `-a` / `--archive` flag, the script identifies "new" files (files untracked by Git, usually build artifacts) and packages them. Supported formats include:

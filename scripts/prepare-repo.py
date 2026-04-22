@@ -8,14 +8,23 @@ import tarfile
 import shutil
 import json
 
-def run_command(cmd, cwd=None):
+def run_command(cmd, cwd=None, description=None):
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
     if result.returncode != 0:
-        logging.error(f"Error in '{cmd}':\n{result.stderr.strip()}")
+        label = description if description else cmd
+        stderr = result.stderr.strip()
+        stdout = result.stdout.strip()
+
+        logging.error(f"Failed: {label}")
+        logging.error(f"  Command : {cmd}")
+        if stderr:
+            logging.error(f"  Reason  : {stderr}")
+        if stdout:
+            logging.error(f"  Output  : {stdout}")
         return False
     return True
 
-def process_config(config, default_repo, prefix="", run_build=False, archive_name=None):
+def process_config(config, default_repo, prefix="", run_build=False, archive_name=None, force=False):
     suffix = config.get('suffix', 'custom')
     base_repo = config.get('repo', default_repo)
     tag = config.get('tag')
@@ -31,6 +40,22 @@ def process_config(config, default_repo, prefix="", run_build=False, archive_nam
         prefix = f"{prefix}-"
     target_dir = f"{prefix}{suffix}"
     logging.info(f"--- Processing: {target_dir} ---")
+
+    # Existierendes Verzeichnis behandeln
+    if os.path.exists(target_dir):
+        if force:
+            logging.info(f"Directory '{target_dir}' already exists. Removing it (--force)...")
+            try:
+                shutil.rmtree(target_dir)
+            except Exception as e:
+                logging.error(f"Failed to remove existing directory '{target_dir}': {e}")
+                return target_dir, None
+        else:
+            logging.error(
+                f"Directory '{target_dir}' already exists. "
+                f"Use -f/--force to overwrite it."
+            )
+            return target_dir, None
 
     if not run_command(f"git clone {base_repo} {target_dir}"):
         return target_dir, None
@@ -97,6 +122,7 @@ def main():
     parser.add_argument("-c", "--config", default="config.yml", help="Path to the YAML configuration file")
     parser.add_argument("-b", "--build", action="store_true", help="Execute the build command if defined")
     parser.add_argument("-a", "--archive", help="Archive name for new files (implies -b)")
+    parser.add_argument("-f", "--force", action="store_true", help="Remove existing repository directories before cloning")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     parser.add_argument("--clean", action="store_true", help="Remove checked out repositories on exit")
     parser.add_argument("--json-output", action="store_true", help="Print created archive paths as JSON")
@@ -123,7 +149,13 @@ def main():
     created_archives = []
     try:
         for cfg in configs:
-            target_dir, archive_path = process_config(cfg, default_repo, prefix=prefix, run_build=args.build, archive_name=args.archive)
+            target_dir, archive_path = process_config(
+                cfg, default_repo,
+                prefix=prefix,
+                run_build=args.build,
+                archive_name=args.archive,
+                force=args.force          # <-- weitergereicht
+            )
             if target_dir:
                 created_dirs.append(target_dir)
             if archive_path:
