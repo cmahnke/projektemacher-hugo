@@ -27,6 +27,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           logout: false
+      - uses: rlespinasse/shortify-git-revision@v1
+        with:
+          name: GITHUB_SHA
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
@@ -35,7 +38,9 @@ jobs:
         uses: docker/build-push-action@v7.1.0
         with:
           push: true
+          context: .
+          file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/cmahnke/projektemacher-hugo:latest
-            ghcr.io/cmahnke/projektemacher-hugo:${{ github.ref }}
+            ghcr.io/cmahnke/projektemacher-hugo:${{ env.GITHUB_SHA_SHORT }}
